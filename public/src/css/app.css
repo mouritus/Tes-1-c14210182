@@ -36,10 +36,6 @@ nav a {
   margin-right: 20px;
 }
 
-nav a:hover {
-  text-decoration: underline;
-}
-
 /* Center the workout cards horizontally */
 .workout-cards {
   display: flex;
@@ -164,4 +160,11 @@ p {
 
 .btn-floating:hover {
   background-color: #0056b3; /* Change color on hover */
+}
+
+.back-button {
+  text-decoration: none;
+  color: #0074D9; /* Set your desired color */
+  font-weight: bold;
+  margin-left: 10px; /* Adjust spacing as needed */
 }

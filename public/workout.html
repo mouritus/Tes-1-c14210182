@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="src/css/app.css">
+    <link rel="manifest" href="manifest.json"> <!-- Manifest file for PWA -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>Fitness App</title>
+</head>
+
+<body>
+    <header>
+        <h1>Fitness App</h1>
+        <a href="javascript:history.back()" class="back-button">Back</a>
+    </header>
+
+    <main class="workout-cards">
+        <!-- Workout cards will be dynamically generated here -->
+    </main>
+
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <!-- Add detailed workout information here -->
+            <h2 id="workout-title"></h2>
+            <p id="workout-description"></p>
+            <button id="close-overlay">Close</button>
+        </div>
+    </div>
+
+    <div class="floating-button">
+        <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored" id="share-image-button">
+            <i class="material-icons">add</i>
+        </button>
+    </div>
+
+    <script src="/src/js/promise.js"></script>
+    <script src="/src/js/fetch.js"></script>
+    <script src="/src/js/idb.js"></script>
+    <script src="/src/js/utility.js"></script>
+    <script src="/src/js/app.js"></script>
+    <script src="/src/js/feed copy.js"></script>
+</body>
+
+</html>

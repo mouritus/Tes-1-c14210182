@@ -20,6 +20,9 @@ function openCreatePostModal() {
   }
 }
 
+const urlParams = new URLSearchParams(window.location.search);
+const Value = urlParams.get('Value');
+
 var workoutCardsContainer = document.querySelector('.workout-cards');
 
 function clearCards() {
@@ -33,25 +36,43 @@ function createCard(data) {
     const card = document.createElement('div');
     card.classList.add('workout-card');
     card.innerHTML = `
-          <a href="workout.html?Value=${workout.detail}">
           <img src="${workout.image}" alt="${workout.title}">
           <h3>${workout.title}</h3>
           <!-- Add other workout details here -->
       `;
     workoutCardsContainer.appendChild(card);
+
+    card.addEventListener('click', () => {
+      showWorkoutDetails(workout);
+    });
   });
 }
 
+function showWorkoutDetails(workout) {
+  const overlay = document.getElementById('overlay');
+  const titleElement = document.getElementById('workout-title');
+  const descriptionElement = document.getElementById('workout-description');
+
+  titleElement.textContent = workout.name;
+  descriptionElement.textContent = workout.Detail;
+
+  overlay.style.display = 'block';
+
+  const closeOverlayButton = document.getElementById('close-overlay');
+  closeOverlayButton.addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+}
 
 function updateUI(data) {
   clearCards();
   createCard(data);
 }
 
-var url = 'https://tes-1-c14210182-default-rtdb.asia-southeast1.firebasedatabase.app/workout.json';
+var url = 'https://tes-1-c14210182-default-rtdb.asia-southeast1.firebasedatabase.app/';
 var networkDataReceived = false;
 
-fetch(url)
+fetch(url+Value+'.json')
   .then(function (res) {
     return res.json();
   })
