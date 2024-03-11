@@ -1,63 +1,165 @@
-// service-worker.js
+importScripts('/src/js/idb.js');
+importScripts('/src/js/utility.js');
 
-// Define cache names
-const staticCacheName = 'fitness-app-static-v1';
-const dynamicCacheName = 'fitness-app-dynamic-v1';
-
-// Assets to cache statically (e.g., icons, stylesheets, scripts)
-const staticAssets = [
-    '/',
-    '/index.html',
-    'src/css/styles.css',
-    'src/js/app.js',
-    '/manifest.json',
-    '/icon-192x192.png',
-    '/icon-512x512.png',
-    // Add other static assets here
+var CACHE_STATIC_NAME = 'static-v18';
+var CACHE_DYNAMIC_NAME = 'dynamic-v2';
+var STATIC_FILES = [
+  '/',
+  '/index.html',
+  '/offline.html',
+  '/src/js/app.js',
+  '/src/js/feed.js',
+  '/src/js/idb.js',
+  '/src/js/promise.js',
+  '/src/js/fetch.js',
+  '/src/css/app.css'
 ];
 
-// Install event: Cache static assets
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(staticCacheName)
-            .then((cache) => {
-                return cache.addAll(staticAssets);
-            })
-    );
+
+
+self.addEventListener('install', function (event) {
+  console.log('[Service Worker] Installing Service Worker ...', event);
+  event.waitUntil(
+    caches.open(CACHE_STATIC_NAME)
+      .then(function (cache) {
+        console.log('[Service Worker] Precaching App Shell');
+        cache.addAll(STATIC_FILES);
+      })
+  )
 });
 
-// Activate event: Clean up old caches
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then((keys) => {
-                return Promise.all(keys
-                    .filter((key) => key !== staticCacheName && key !== dynamicCacheName)
-                    .map((key) => caches.delete(key))
-                );
-            })
-    );
+self.addEventListener('activate', function (event) {
+  console.log('[Service Worker] Activating Service Worker ....', event);
+  event.waitUntil(
+    caches.keys()
+      .then(function (keyList) {
+        return Promise.all(keyList.map(function (key) {
+          if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
+            console.log('[Service Worker] Removing old cache.', key);
+            return caches.delete(key);
+          }
+        }));
+      })
+  );
+  return self.clients.claim();
 });
 
-// Fetch event: Serve from cache or fetch from network
-self.addEventListener('fetch', (event) => {
+function isInArray(string, array) {
+  var cachePath;
+  if (string.indexOf(self.origin) === 0) { // request targets domain where we serve the page from (i.e. NOT a CDN)
+    console.log('matched ', string);
+    cachePath = string.substring(self.origin.length); // take the part of the URL AFTER the domain (e.g. after localhost:8080)
+  } else {
+    cachePath = string; // store the full request (for CDNs)
+  }
+  return array.indexOf(cachePath) > -1;
+}
+
+self.addEventListener('fetch', function (event) {
+
+  var url = 'https://tes-1-c14210182-default-rtdb.asia-southeast1.firebasedatabase.app/workout';
+  if (event.request.url.indexOf(url) > -1) {
+    event.respondWith(fetch(event.request)
+      .then(function (res) {
+        var clonedRes = res.clone();
+        clearAllData('posts')
+          .then(function () {
+            return clonedRes.json();
+          })
+          .then(function (data) {
+            for (var key in data) {
+              writeData('posts', data[key])
+            }
+          });
+        return res;
+      })
+    );
+  } else if (isInArray(event.request.url, STATIC_FILES)) {
     event.respondWith(
-        caches.match(event.request)
-            .then((cachedResponse) => {
-                return cachedResponse || fetch(event.request)
-                    .then((networkResponse) => {
-                        return caches.open(dynamicCacheName)
-                            .then((cache) => {
-                                cache.put(event.request, networkResponse.clone());
-                                return networkResponse;
-                            });
-                    });
-            })
-            .catch(() => {
-                // Handle offline scenarios (e.g., show a custom offline page)
-                // You can customize this behavior based on your app's requirements
-                // For now, let's return a simple offline message
-                return new Response('Offline. Please check your connection.');
-            })
+      caches.match(event.request)
     );
+  } else {
+    event.respondWith(
+      caches.match(event.request)
+        .then(function (response) {
+          if (response) {
+            return response;
+          } else {
+            return fetch(event.request)
+              .then(function (res) {
+                return caches.open(CACHE_DYNAMIC_NAME)
+                  .then(function (cache) {
+                    // trimCache(CACHE_DYNAMIC_NAME, 3);
+                    cache.put(event.request.url, res.clone());
+                    return res;
+                  })
+              })
+              .catch(function (err) {
+                return caches.open(CACHE_STATIC_NAME)
+                  .then(function (cache) {
+                    if (event.request.headers.get('accept').includes('text/html')) {
+                      return cache.match('/offline.html');
+                    }
+                  });
+              });
+          }
+        })
+    );
+  }
 });
+
+// self.addEventListener('fetch', function(event) {
+//   event.respondWith(
+//     caches.match(event.request)
+//       .then(function(response) {
+//         if (response) {
+//           return response;
+//         } else {
+//           return fetch(event.request)
+//             .then(function(res) {
+//               return caches.open(CACHE_DYNAMIC_NAME)
+//                 .then(function(cache) {
+//                   cache.put(event.request.url, res.clone());
+//                   return res;
+//                 })
+//             })
+//             .catch(function(err) {
+//               return caches.open(CACHE_STATIC_NAME)
+//                 .then(function(cache) {
+//                   return cache.match('/offline.html');
+//                 });
+//             });
+//         }
+//       })
+//   );
+// });
+
+// self.addEventListener('fetch', function(event) {
+//   event.respondWith(
+//     fetch(event.request)
+//       .then(function(res) {
+//         return caches.open(CACHE_DYNAMIC_NAME)
+//                 .then(function(cache) {
+//                   cache.put(event.request.url, res.clone());
+//                   return res;
+//                 })
+//       })
+//       .catch(function(err) {
+//         return caches.match(event.request);
+//       })
+//   );
+// });
+
+// Cache-only
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     caches.match(event.request)
+//   );
+// });
+
+// Network-only
+// self.addEventListener('fetch', function (event) {
+//   event.respondWith(
+//     fetch(event.request)
+//   );
+// });
